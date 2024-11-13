@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Brain Tumor Classification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #e9ecef;
+            color: #333;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+            margin-top: 50px;
+        }
+        .left-section, .right-section {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            margin: 10px;
+        }
+        .left-section {
+            width: 45%;
+            text-align: center;
+        }
+        .right-section {
+            width: 45%;
+            text-align: left;
+        }
+        #testImage {
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            margin-top: 20px;
+        }
+        #loadingIndicator {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.5em;
+            color: #000;
+            z-index: 1000;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        button, .file-upload-btn {
+            margin-top: 15px;
+            padding: 10px 20px;
+            font-size: 1em;
+            color: white;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover, .file-upload-btn:hover {
+            background-color: #0056b3;
+        }
+        .upload-section {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .file-upload-label {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background-color 0.3s ease;
+        }
+        .file-upload-label:hover {
+            background-color: #0056b3;
+        }
+        h1 {
+            font-size: 2em;
+            margin-bottom: 0.5em;
+        }
+        p.description {
+            font-size: 1.1em;
+            color: #666;
+            margin-top: -10px;
+        }
+        .result-label {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .insights {
+            font-size: 1em;
+            color: #444;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Brain Tumor Image Prediction</h1>
+    <p class="description">Upload an MRI image or load a random one to check for brain tumors using AI.</p>
+
+    <div class="container">
+        <!-- Left section for image and prediction -->
+        <div class="left-section">
+            <img id="testImage" src="" alt="Test Image">
+            <p id="predictedLabel" class="result-label">Predicted Label: </p>
+            <button onclick="getNextImage()">Load Random Image</button>
+            <div class="upload-section">
+                <label for="fileInput" class="file-upload-label">Choose File</label>
+                <input type="file" id="fileInput" accept="image/*">
+                <button onclick="uploadImage()">Upload Image</button>
+            </div>
+        </div>
+
+        <!-- Right section for AI insights -->
+        <div class="right-section">
+            <h2>AI Insights</h2>
+            <p id="aiInsights" class="insights">Insights about the condition will appear here.</p>
+        </div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="loadingIndicator">Loading...</div>
+
+    <script>
+        // Function to load a random image
+        function getNextImage() {
+            document.getElementById('loadingIndicator').style.display = 'block';
+
+            fetch('/get-random-image')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('testImage').src = data.image_path;
+                    document.getElementById('predictedLabel').innerText = 'Predicted Label: ' + data.predicted_label;
+                    document.getElementById('aiInsights').innerText = data.insights;
+                    document.getElementById('loadingIndicator').style.display = 'none';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('loadingIndicator').style.display = 'none';
+                });
+        }
+
+        // Function to upload an image
+        function uploadImage() {
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput.files.length === 0) {
+                alert("Please select an image file to upload.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            document.getElementById('loadingIndicator').style.display = 'block';
+
+            fetch('/upload-image', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert("Error: " + data.error);
+                } else {
+                    document.getElementById('testImage').src = URL.createObjectURL(fileInput.files[0]);
+                    document.getElementById('predictedLabel').innerText = 'Predicted Label: ' + data.predicted_label;
+                    document.getElementById('aiInsights').innerText = data.insights;
+                }
+                document.getElementById('loadingIndicator').style.display = 'none';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('loadingIndicator').style.display = 'none';
+            });
+        }
+
+        // Load a random image on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            getNextImage();
+        }, false);
+    </script>
+</body>
+</html>
